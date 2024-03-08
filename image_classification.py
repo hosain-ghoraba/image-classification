@@ -6,11 +6,11 @@
 
 # Basic
 import os
+import random
 from os import makedirs
 from os import listdir
 from shutil import copyfile
 from random import seed
-from random import random
 import numpy as np
 import pandas as pd
 
@@ -39,32 +39,30 @@ from keras.callbacks import ReduceLROnPlateau,EarlyStopping
 # 1 ---------------------------------------------------Loading Images in a Dataframe
 # region
 
-# train_path = "../dogs-vs-cats/data set 3/train/"
-
-# filenames = os.listdir(train_path)
-# labels = [x.split(".")[0] for x in filenames]
-
-# data = pd.DataFrame({"filename": filenames, "label": labels})
-
-base_path = "../dogs-vs-cats/data set 2/"
+all_entities_path = "../dogs-vs-cats/data set 2/"
 
 # Get the list of subfolders (each subfolder name is considered as a label)
-labels = os.listdir(base_path)
+all_entities_names = os.listdir(all_entities_path)
 
 filenames = []
-file_labels = []
+
+# the data set folder contains subfolders, each subfolder in named cat,dog, etc
+# the images in each subfolder are named as cat.1.jpg, cat.2.jpg, etc
+
+percentage = 1  # Use only a percentage of the data to speed up the process
 
 # Loop over each subfolder
-for label in labels:
-    # Get the list of filenames in the current subfolder
-    subfolder_filenames = os.listdir(os.path.join(base_path, label))
-    
+for entity_name in all_entities_names:
+    entity_path = os.path.join(all_entities_path, entity_name)
+    entity_filenames = os.listdir(entity_path)
+    # Shuffle the filenames
+    random.shuffle(entity_filenames)
+    # Select a percentage of the filenames
+    entity_filenames = entity_filenames[:int(len(entity_filenames) * percentage)]
     # Add the filenames to the main list, prepend the subfolder name to each filename
-    filenames.extend([os.path.join(label, f) for f in subfolder_filenames])
-    
-    # Add the current subfolder's label to the labels list
-    file_labels.extend([label] * len(subfolder_filenames))
+    filenames.extend([os.path.join(entity_name, image) for image in entity_filenames])
 
+file_labels = [x.split(os.sep)[0] for x in filenames]
 data = pd.DataFrame({"filename": filenames, "label": file_labels})
 
 # endregion
@@ -107,12 +105,11 @@ data = pd.DataFrame({"filename": filenames, "label": file_labels})
 #  endregion
 #
 
-
 # 2 --------------------------------------------------- Train Test Split
 # region
 
-labels = data['label']
-X_train, X_temp = train_test_split(data, test_size=0.2, stratify=labels, random_state = 42)
+all_entities_names = data['label']
+X_train, X_temp = train_test_split(data, test_size=0.2, stratify=all_entities_names, random_state = 42)
 label_test_val = X_temp['label']
 X_test, X_val = train_test_split(X_temp, test_size=0.5, stratify=label_test_val, random_state = 42)
 
@@ -165,7 +162,7 @@ print(" ")
 
 image_size = 128
 image_channel = 3
-bat_size = 1
+bat_size = 32
 
 # Creating image data generator
 train_datagen = ImageDataGenerator(rescale=1./255,
@@ -181,14 +178,14 @@ test_datagen = ImageDataGenerator(rescale=1./255)
 # Applying image data gernerator to train and test data
 
 train_generator = train_datagen.flow_from_dataframe(X_train,
-                                                directory = train_path ,
+                                                directory = all_entities_path ,
                                                 x_col= 'filename',
                                                 y_col= 'label',
                                                 batch_size = bat_size,
                                                 target_size = (image_size,image_size),
                                                 class_mode='categorical')
 val_generator = test_datagen.flow_from_dataframe(X_val, 
-                                                directory = train_path ,
+                                                directory = all_entities_path ,
                                                 x_col= 'filename',
                                                 y_col= 'label',
                                                 batch_size = bat_size,
@@ -197,7 +194,7 @@ val_generator = test_datagen.flow_from_dataframe(X_val,
                                                 class_mode='categorical')
 
 test_generator = test_datagen.flow_from_dataframe(X_test, 
-                                                directory = train_path ,
+                                                directory = all_entities_path ,
                                                 x_col= 'filename',
                                                 y_col= 'label',
                                                 batch_size = bat_size,
@@ -266,6 +263,12 @@ model.compile(optimizer = 'adam',loss = 'categorical_crossentropy',metrics = ['a
 
 # 7 --------------------------------------------------- Model Fitting
 # region
+
+print("x_train length: ",len(X_train))
+print("x_test length: ",len(X_test))
+print("batch size: ",bat_size)
+print("steps_per_epoch: ",len(X_train) , " // " , bat_size , " = " , len(X_train) // bat_size)
+print("validation_steps: ",len(X_test) , " // " , bat_size , " = " , len(X_test) // bat_size)
 cat_dog = model.fit(train_generator,
                     validation_data = val_generator,          
                     callbacks=[early_stoping,learning_rate_reduction],
@@ -275,11 +278,6 @@ cat_dog = model.fit(train_generator,
                     steps_per_epoch = len(X_train) // bat_size,
                     validation_steps = len(X_test) // bat_size,
                    )
-print("train_generator.n: ",train_generator.n),
-print("val_generator.n: ",val_generator.n)
-print ("batch size :" , bat_size)
-print ("steps_per_epoch: " , train_generator.n , " // " , bat_size , " = " , train_generator.n // bat_size)
-print ("validation_steps: " , val_generator.n , " // " , bat_size , " = " , val_generator.n // bat_size )
 
 # endregion
 
@@ -287,26 +285,26 @@ print ("validation_steps: " , val_generator.n , " // " , bat_size , " = " , val_
 # region
 # plots for accuracy and Loss with epochs
 
-# error = pd.DataFrame(cat_dog.history)
+error = pd.DataFrame(cat_dog.history)
 
-# plt.figure(figsize=(18,5),dpi=200)
-# sns.set_style('darkgrid')
+plt.figure(figsize=(18,5),dpi=200)
+sns.set_style('darkgrid')
 
-# plt.subplot(121)
-# plt.title('Cross Entropy Loss',fontsize=15)
-# plt.xlabel('Epochs',fontsize=12)
-# plt.ylabel('Loss',fontsize=12)
-# plt.plot(error['loss'])
-# plt.plot(error['val_loss'])
+plt.subplot(121)
+plt.title('Cross Entropy Loss',fontsize=15)
+plt.xlabel('Epochs',fontsize=12)
+plt.ylabel('Loss',fontsize=12)
+plt.plot(error['loss'])
+plt.plot(error['val_loss'])
 
-# plt.subplot(122)
-# plt.title('Classification Accuracy',fontsize=15)
-# plt.xlabel('Epochs',fontsize=12)
-# plt.ylabel('Accuracy',fontsize=12)
-# plt.plot(error['accuracy'])
-# plt.plot(error['val_accuracy'])
+plt.subplot(122)
+plt.title('Classification Accuracy',fontsize=15)
+plt.xlabel('Epochs',fontsize=12)
+plt.ylabel('Accuracy',fontsize=12)
+plt.plot(error['accuracy'])
+plt.plot(error['val_accuracy'])
 
-# plt.show(block=False)  # hosain : prevent the popup 
+plt.show(block=False)  # hosain : prevent the popup 
 
 
 # endregion
@@ -350,8 +348,8 @@ print('The Loss of the model for testing data is:',loss)
 
 # 12 --------------------------------------------------- Classification Report
 # region
-labels =['Cat','Dog']
-print(classification_report(y_true, y_pred,target_names=labels))
+all_entities_names =['Cat','Dog']
+print(classification_report(y_true, y_pred,target_names=all_entities_names))
 
 # endregion
 
@@ -361,7 +359,7 @@ confusion_mtx = confusion_matrix(y_true,y_pred)
 print("Confusion Matrix: \n",confusion_mtx)
 
 f,ax = plt.subplots(figsize = (8,4),dpi=200)
-sns.heatmap(confusion_mtx, annot=True, linewidths=0.1, cmap = "gist_yarg_r", linecolor="black", fmt='.0f', ax=ax,cbar=False, xticklabels=labels, yticklabels=labels)
+sns.heatmap(confusion_mtx, annot=True, linewidths=0.1, cmap = "gist_yarg_r", linecolor="black", fmt='.0f', ax=ax,cbar=False, xticklabels=all_entities_names, yticklabels=all_entities_names)
 
 plt.xlabel("Predicted Label",fontsize=10)
 plt.ylabel("True Label",fontsize=10)
@@ -370,4 +368,3 @@ plt.title("Confusion Matrix",fontsize=13)
 plt.show()
 # endregion
 
-# output the cross validation results
