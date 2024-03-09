@@ -1,10 +1,9 @@
 
-# changes : !
-#  changes to 'binary' not categorical
-# epochs = 3 not 30
 
+# 0 ---------------------------------------------------------imports
+# region
 
-# Basic
+# @title 0 - imports { display-mode: "form" }
 import os
 import random
 from os import makedirs
@@ -13,39 +12,32 @@ from shutil import copyfile
 from random import seed
 import numpy as np
 import pandas as pd
-
-# visuals
 import seaborn as sns
 import matplotlib.pyplot as plt
 from matplotlib.image import imread
 from PIL import Image
-
-# Scikit-learn
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report,confusion_matrix,ConfusionMatrixDisplay
-
-# Tensorflow
 import tensorflow as tf
-
 from keras.utils import to_categorical
-
 from keras.models import Sequential
 from keras.preprocessing.image import ImageDataGenerator
 from keras.layers import Dense,MaxPooling2D,Dropout,Flatten,BatchNormalization,Conv2D
 from keras.callbacks import ReduceLROnPlateau,EarlyStopping
+# endregion
 
-
-
-# 1 ---------------------------------------------------Loading Images in a Dataframe
+# 1 ---------------------------------------------------------Loading Images in a Dataframe
 # region
+# @title 1 - Loading Images in a Dataframe { display-mode: "form" }
 
-all_entities_path = "../dogs-vs-cats/data set 2/"
+# to be used if running on google colab
+all_entities_path = "../dogs-vs-cats/data set 2/" 
 
-# Get the list of subfolders (each subfolder name is considered as a label)
+# to be used if running on google colab
+# all_entities_path = "/content/gdrive/My Drive/GUC Bachelor : Arabic Image-to-Letters Script Recognition/data set/data set 2/" 
+
 all_entities_names = os.listdir(all_entities_path)
-
 filenames = []
-
 # the data set folder contains subfolders, each subfolder in named cat,dog, etc
 # the images in each subfolder are named as cat.1.jpg, cat.2.jpg, etc
 
@@ -72,49 +64,11 @@ for entity_name in all_entities_names:
 
 file_labels = [x.split(os.sep)[0] for x in filenames]
 data = pd.DataFrame({"filename": filenames, "label": file_labels})
-
 # endregion
 
-# ------------------------------------------------------- visualize the data
+# 2 --------------------------------------------------------- Train Test Split
 # region
-
-# #  ---------------dogs photos
-# plt.figure(figsize=(20,20)) # specifying the overall grid size
-# plt.subplots_adjust(hspace=0.4)
-
-
-# for i in range(10):
-    
-#     plt.subplot(1,10,i+1)    # the number of images in the grid is 10*10 (100)
-#     filename = os.path.join(train_path, 'dog.' + str(i+1) + '.jpg')
-#     image = imread(filename)
-#     plt.imshow(image)
-#     plt.title('Dog',fontsize=12)
-#     plt.axis('off')
-
-# plt.show(block = False)
-
-# #  ---------------cats photos
-# plt.figure(figsize=(20,20)) # specifying the overall grid size
-# plt.subplots_adjust(hspace=0.4)
-
-
-# for i in range(10):
-    
-#     plt.subplot(1,10,i+1)    # the number of images in the grid is 10*10 (100)
-#     filename = os.path.join(train_path, 'cat.' + str(i+1) + '.jpg')
-#     image = imread(filename)
-#     plt.imshow(image)
-#     plt.title('Cat',fontsize=12)
-#     plt.axis('off')
-
-# plt.show(block = False)
-
-#  endregion
-#
-
-# 2 --------------------------------------------------- Train Test Split
-# region
+# @title 2 - Train Test Split { display-mode: "form" }
 
 all_entities_names = data['label']
 X_train, X_temp = train_test_split(data, test_size=0.2, stratify=all_entities_names, random_state = 42)
@@ -129,44 +83,9 @@ print(" ")
 
 # endregion
 
-# ----------------------------------------------------visualize the test-train percentage
+# 3 --------------------------------------------------------- Data Preparation
 # region
-# labels = ['Cat','Dog']
-
-# label1,count1 = np.unique(X_train.label,return_counts=True)
-# label2,count2 = np.unique(X_val.label,return_counts=True)
-# label3,count3 = np.unique(X_test.label,return_counts=True)
-
-# uni1 = pd.DataFrame(data=count1,index=labels,columns=['Count1'])
-# uni2 = pd.DataFrame(data=count2,index=labels,columns=['Count2'])
-# uni3 = pd.DataFrame(data=count3,index=labels,columns=['Count3'])
-
-
-# plt.figure(figsize=(20,6),dpi=200)
-# sns.set_style('darkgrid')
-
-# font_size = 15
-
-# plt.subplot(131)
-# sns.barplot(data=uni1,x=uni1.index,y='Count1',palette='icefire',width=0.2).set_title('Training set',fontsize=font_size)
-# plt.xlabel('Labels',fontsize=12)
-# plt.ylabel('Count',fontsize=12)
-
-# plt.subplot(132)
-# sns.barplot(data=uni2,x=uni2.index,y='Count2',palette='icefire',width=0.2).set_title('validation set',fontsize= font_size)
-# plt.xlabel('Labels',fontsize=12)
-# plt.ylabel('Count',fontsize=12)
-
-
-# plt.subplot(133)
-# sns.barplot(data=uni3,x=uni3.index,y='Count3',palette='icefire',width=0.2).set_title('Testing set',fontsize= font_size)
-# plt.xlabel('Labels',fontsize=12)
-# plt.ylabel('Count',fontsize=12)
-
-# plt.show(block = False)
-# endregion 
-# 3 --------------------------------------------------- Data Preparation
-# region
+# @title 3 - Data Preparation { display-mode: "form" }
 
 image_size = 128
 image_channel = 3
@@ -212,8 +131,9 @@ test_generator = test_datagen.flow_from_dataframe(X_test,
 
 # endregion
 
-# 4 --------------------------------------------------- Deep Learning Model
+# 4 --------------------------------------------------------- Deep Learning Model
 # region
+# @title 4 - Deep Learning Model { display-mode: "form" }
 
 model = Sequential()
 
@@ -251,8 +171,9 @@ model.add(Dense(2, activation='softmax'))
 
 # endregion
 
-# 5 --------------------------------------------------- Callbacks
+# 5 --------------------------------------------------------- Callbacks
 # region
+# @title 5 - Callbacks { display-mode: "form" }
 learning_rate_reduction = ReduceLROnPlateau(monitor = 'val_accuracy',
                                             patience=2,
                                             factor=0.5,
@@ -263,14 +184,16 @@ early_stoping = EarlyStopping(monitor='val_loss',patience= 3,restore_best_weight
 
 # endregion
 
-# 6 --------------------------------------------------- Model Compilation
+# 6 --------------------------------------------------------- Model Compilation
 # region
+# @title 6 - Model Compilation { display-mode: "form" }
 model.compile(optimizer = 'adam',loss = 'categorical_crossentropy',metrics = ['accuracy'])
 
 # endregion
 
-# 7 --------------------------------------------------- Model Fitting
+# 7 --------------------------------------------------------- Model Fitting
 # region
+# @title 7 - Model Fitting { display-mode: "form" }
 
 print("x_train length: ",len(X_train))
 print("x_test length: ",len(X_test))
@@ -289,8 +212,9 @@ cat_dog = model.fit(train_generator,
 
 # endregion
 
-# 8 --------------------------------------------------- Plot the results
+# 8 --------------------------------------------------------- Plot the results
 # region
+# @title 8 - Plot the results { display-mode: "form" }
 # plots for accuracy and Loss with epochs
 
 error = pd.DataFrame(cat_dog.history)
@@ -317,8 +241,9 @@ plt.show(block=False)  # hosain : prevent the popup
 
 # endregion
 
-# 9 --------------------------------------------------- Evaluation
+# 9 --------------------------------------------------------- Evaluation
 # region 
+# @title 9 - Evaluation { display-mode: "form" }
 # Evaluvate for train generator
 loss,acc = model.evaluate(train_generator,batch_size = bat_size, verbose = 0)
 
@@ -333,13 +258,15 @@ print('The Loss of the model for validation data is:',loss)
 
 #  endregion
 
-# 10 --------------------------------------------------- save the model
+# 10 --------------------------------------------------------- save the model
 # region
+# @title 10 - save the model { display-mode: "form" }
 model.save("model.keras")
 # endregion
 
-# 11 --------------------------------------------------- Prediction
+# 11 --------------------------------------------------------- Prediction
 # region
+# @title 11 - Prediction { display-mode: "form" }
 result = model.predict(test_generator,batch_size = bat_size,verbose = 0)
 
 y_pred = np.argmax(result, axis = 1)
@@ -354,8 +281,9 @@ print('The Loss of the model for testing data is:',loss)
 
 # endregion
 
-# 12 --------------------------------------------------- Classification Report
+# 12 --------------------------------------------------------- Classification Report
 # region
+# @title 12 - Classification Report { display-mode: "form" }
 all_entities_names =['Cat','Dog']
 print(classification_report(y_true, y_pred,target_names=all_entities_names))
 
@@ -363,6 +291,7 @@ print(classification_report(y_true, y_pred,target_names=all_entities_names))
 
 # 13 --------------------------------------------------- Confusion Matrix
 # region
+# @title 13 - Confusion Matrix { display-mode: "form" }
 confusion_mtx = confusion_matrix(y_true,y_pred) 
 print("Confusion Matrix: \n",confusion_mtx)
 

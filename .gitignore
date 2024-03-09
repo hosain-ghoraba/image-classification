@@ -1,6 +1,5 @@
 
-/data set 1
-/data set 2
-/data set 3
+/data set *
+data set *
 /env
 *.keras
