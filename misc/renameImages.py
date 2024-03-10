@@ -10,27 +10,23 @@ all_entities_path = './data set 2/'
 all_entities_names = os.listdir(all_entities_path)
 # ----------------------------------------------------------------------------------------------------
 data_is_corrupted = False
-corrupted_files = []
-print("\nVaryfiying all files are non-corrupted images...")
+print("\nVerifying all files are non-corrupted images...")
 for entity_name in all_entities_names:
     entity_path = os.path.join(all_entities_path, entity_name)
     for filename in os.listdir(entity_path):
+        file_path = os.path.join(entity_path, filename)
         try:
-            with warnings.catch_warnings(record=True) as w:
-                warnings.simplefilter("always")  # turn warnings into exceptions
-                img = Image.open(os.path.join(entity_path, filename))  # try to open the image
-                img.verify()  # verify that it is, in fact, an image
-                if len(w) > 0:  # if there were warnings
-                    for warning in w:
-                        print(f'Warning for file {filename}: {warning.message}')
-        except (IOError, SyntaxError) as e:
+            with warnings.catch_warnings():
+                warnings.simplefilter('error')  # treat warnings as exceptions within this context
+                img = Image.open(file_path)  
+                img.verify()
+        except (IOError, SyntaxError, UserWarning) as e:  # catch UserWarning along with other exceptions
+            print(type(e) , "for file", filename, ":", e)
             data_is_corrupted = True
-            corrupted_files.append('folder : ' + entity_name + ' , file :' + filename)
-
-if data_is_corrupted:
-    print("\nfound corrupted files, please fix them before proceeding :")
-    print("\n".join(corrupted_files))
-    exit()
+            os.remove(file_path)  # delete the file
+            print(f"file {filename} in folder {entity_name} is corrupted and has been deleted")     
+print("your data is ok." if not data_is_corrupted else "done reporting error files.")  
+    
 # ----------------------------------------------------------------------------------------------------
 # First pass to rename all files to a temporary unique name to avoid renaming a file with a name that belongs to another file in the same folder
 print("giving temporary unique names...")
