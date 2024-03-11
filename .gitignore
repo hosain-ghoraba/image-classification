@@ -1,5 +1,6 @@
 
-/data set *
-data set *
+**/data_set/
+**/data/
+**/clean_data/
 /env
 *.keras
