@@ -1,0 +1,5 @@
+to do : 
+
+2 - use something else other than pillow 
+
+
