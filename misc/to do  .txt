@@ -1,5 +1,6 @@
 to do : 
 
-2 - use something else other than pillow 
+1 - use something else other than pillow to fix colab error
+2 - install needed libraries to fix kaggle errors
 
 
