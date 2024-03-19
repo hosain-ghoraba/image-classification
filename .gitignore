@@ -4,3 +4,4 @@
 **/clean_data/
 /env
 *.keras
+/data_is_clean.txt
