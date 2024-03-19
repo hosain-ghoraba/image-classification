@@ -1,5 +1,0 @@
-Cat\666.jpg 
-Cat\Thumbs.db  
-Dog\11702.jpg 
-Dog\9041.jpg 
-Dog\Thumbs.db 
